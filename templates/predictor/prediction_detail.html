@@ -1,0 +1,102 @@
+
+{% extends "base.html" %}
+
+{% block title %}Prediction Details{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h3 class="mb-3">Prediction Details</h3>
+
+        <h4 class="text-primary mb-4">
+            Estimated Price: ₹{{ prediction.predicted_price|floatformat:2 }}
+        </h4>
+
+        <table class="table table-bordered">
+            <tr>
+                <th>City</th>
+                <td>{{ prediction.city }}</td>
+            </tr>
+            <tr>
+                <th>Locality Tier</th>
+                <td>{{ prediction.locality_tier }}</td>
+            </tr>
+            <tr>
+                <th>BHK</th>
+                <td>{{ prediction.bhk }}</td>
+            </tr>
+            <tr>
+                <th>Bathrooms</th>
+                <td>{{ prediction.bathrooms }}</td>
+            </tr>
+            <tr>
+                <th>Super Area</th>
+                <td>{{ prediction.super_area_sqft }} sq.ft.</td>
+            </tr>
+            <tr>
+                <th>Carpet Area</th>
+                <td>{{ prediction.carpet_area_sqft }} sq.ft.</td>
+            </tr>
+            <tr>
+                <th>Floor</th>
+                <td>{{ prediction.floor_no }} of {{ prediction.total_floors }}</td>
+            </tr>
+            <tr>
+                <th>Property Age</th>
+                <td>{{ prediction.property_age_years }} years</td>
+            </tr>
+            <tr>
+                <th>Parking</th>
+                <td>{{ prediction.parking }}</td>
+            </tr>
+            <tr>
+                <th>Furnishing</th>
+                <td>{{ prediction.furnishing }}</td>
+            </tr>
+            <tr>
+                <th>Lift</th>
+                <td>{{ prediction.lift|yesno:"Yes,No" }}</td>
+            </tr>
+            <tr>
+                <th>Gated Society</th>
+                <td>{{ prediction.gated_society|yesno:"Yes,No" }}</td>
+            </tr>
+            <tr>
+                <th>Distance to Metro</th>
+                <td>{{ prediction.distance_to_metro_km }} km</td>
+            </tr>
+            <tr>
+                <th>Distance to City Center</th>
+                <td>{{ prediction.distance_to_citycenter_km }} km</td>
+            </tr>
+            <tr>
+                <th>Nearby School</th>
+                <td>{{ prediction.nearby_school_km }} km</td>
+            </tr>
+            <tr>
+                <th>Nearby Hospital</th>
+                <td>{{ prediction.nearby_hospital_km }} km</td>
+            </tr>
+            <tr>
+                <th>Crime Rate Index</th>
+                <td>{{ prediction.crime_rate_index }}</td>
+            </tr>
+            <tr>
+                <th>Saved At</th>
+                <td>{{ prediction.created_at|date:"d M Y, h:i A" }}</td>
+            </tr>
+        </table>
+
+        <div class="d-flex gap-2 mt-3">
+            <a href="{% url 'predictor:prediction_report_pdf' prediction.pk %}"
+               class="btn btn-success">
+                Download PDF Report
+            </a>
+            <a href="{% url 'predictor:history' %}"
+               class="btn btn-secondary">
+                Back to History
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

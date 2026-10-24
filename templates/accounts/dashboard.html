@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+
+{% block title %}User Dashboard | HousePrice{% endblock %}
+
+{% block content %}
+<!-- Welcome & Action Banner -->
+<div class="dashboard-banner p-4 p-md-5 rounded-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="fw-bold mb-1">Hello, {{ user.first_name|default:user.username }}!</h1>
+            <p class="mb-0 text-white-50">
+                Welcome to your House Price Prediction dashboard. Track estimates, download valuation reports, and analyze trends.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'predict_price' %}" class="btn btn-light text-primary fw-semibold">
+                Predict House Price
+            </a>
+            {% if total_predictions > 0 %}
+                <a href="{% url 'accounts:user_predictions_report_pdf' %}" class="btn btn-outline-light">
+                    Download PDF Report
+                </a>
+                <a href="{% url 'accounts:user_predictions_report_csv' %}" class="btn btn-outline-light">
+                    Export CSV
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Summary Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">My Predictions</span>
+                <h2 class="fw-bold mt-2 mb-0 text-primary">{{ total_predictions }}</h2>
+                <small class="text-muted">Total properties estimated</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Average Estimate</span>
+                <h2 class="fw-bold mt-2 mb-0 text-success">
+                    {% if total_predictions > 0 %}
+                        ₹{{ avg_price|floatformat:0 }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </h2>
+                <small class="text-muted">Mean valuation price</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Highest Valuation</span>
+                <h2 class="fw-bold mt-2 mb-0 text-info">
+                    {% if total_predictions > 0 %}
+                        ₹{{ max_price|floatformat:0 }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </h2>
+                <small class="text-muted">Top estimated property</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Quick Actions</span>
+                <div class="mt-2 d-flex flex-column gap-1">
+                    <a href="{% url 'history' %}" class="text-decoration-none small fw-semibold">
+                        View Prediction History &rarr;
+                    </a>
+                    <a href="{% url 'accounts:profile' %}" class="text-decoration-none small text-secondary">
+                        View Profile & Settings &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visual Graphs Section -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Valuation Price Trend</h5>
+                        <small class="text-secondary">Estimated property values across recent queries</small>
+                    </div>
+                </div>
+
+                {% if total_predictions > 0 %}
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="userTrendChart"></canvas>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-secondary">
+                        <p class="mb-3">No prediction records yet to plot graph.</p>
+                        <a href="{% url 'predict_price' %}" class="btn btn-outline-primary btn-sm">
+                            Make First Prediction
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Bedroom (BHK) Distribution</h5>
+                        <small class="text-secondary">Breakdown of properties estimated</small>
+                    </div>
+                </div>
+
+                {% if total_predictions > 0 %}
+                    <div style="position: relative; height: 280px; width: 100%;">
+                        <canvas id="userBhkChart"></canvas>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5 text-secondary">
+                        <p class="mb-3">Make predictions to see BHK breakdown chart.</p>
+                        <a href="{% url 'predict_price' %}" class="btn btn-outline-primary btn-sm">
+                            Predict Now
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Predictions Section -->
+<div class="card dashboard-card">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="fw-bold mb-0">Recent Predictions</h5>
+                <small class="text-secondary">Latest properties evaluated by your account</small>
+            </div>
+            <a href="{% url 'history' %}" class="btn btn-sm btn-outline-primary">
+                View All History
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>City</th>
+                        <th>BHK</th>
+                        <th>Super Area</th>
+                        <th>Estimated Price</th>
+                        <th>Date</th>
+                        <th class="text-center">Report & Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in recent_predictions %}
+                        <tr>
+                            <td class="fw-semibold">{{ p.id }}</td>
+                            <td>
+                                <strong>{{ p.city }}</strong>
+                                <span class="badge text-bg-secondary ms-1">{{ p.locality_tier }}</span>
+                            </td>
+                            <td>{{ p.bhk }} BHK · {{ p.bathrooms }} Bath</td>
+                            <td>{{ p.super_area_sqft|floatformat:0 }} sq.ft.</td>
+                            <td class="fw-bold text-success">
+                                ₹{{ p.predicted_price|floatformat:2 }}
+                            </td>
+                            <td>{{ p.created_at|date:"d M Y" }}</td>
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="{% url 'predictor:prediction_detail' p.pk %}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        Details
+                                    </a>
+                                    <a href="{% url 'predictor:prediction_report_pdf' p.pk %}"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Download PDF Report">
+                                        PDF Report
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                You haven't made any predictions yet.
+                                <br/>
+                                <a href="{% url 'predict_price' %}" class="btn btn-primary btn-sm mt-2">
+                                    Start Predicting House Prices
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if total_predictions > 0 %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const trendLabels = {{ trend_labels_json|safe }};
+    const trendPrices = {{ trend_prices_json|safe }};
+
+    const ctxTrend = document.getElementById("userTrendChart");
+    if (ctxTrend && trendLabels.length > 0) {
+        new Chart(ctxTrend, {
+            type: "line",
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: "Estimated Price (INR)",
+                    data: trendPrices,
+                    fill: true,
+                    borderColor: "#315fe8",
+                    backgroundColor: "rgba(49, 95, 232, 0.08)",
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    pointBackgroundColor: "#315fe8",
+                    pointRadius: 4,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return "₹ " + Number(ctx.raw).toLocaleString("en-IN");
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: {
+                            callback: function (value) {
+                                return "₹" + (value / 100000).toFixed(1) + "L";
+                            }
+                        },
+                        grid: { color: "rgba(0,0,0,0.05)" }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    const bhkLabels = {{ bhk_labels_json|safe }};
+    const bhkCounts = {{ bhk_counts_json|safe }};
+
+    const ctxBhk = document.getElementById("userBhkChart");
+    if (ctxBhk && bhkLabels.length > 0) {
+        new Chart(ctxBhk, {
+            type: "doughnut",
+            data: {
+                labels: bhkLabels,
+                datasets: [{
+                    data: bhkCounts,
+                    backgroundColor: [
+                        "#315fe8",
+                        "#198754",
+                        "#0dcaf0",
+                        "#ffc107",
+                        "#6f42c1",
+                    ],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { boxWidth: 12, padding: 14 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

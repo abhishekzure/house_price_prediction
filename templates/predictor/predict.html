@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}House Price Prediction{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <div class="mb-4">
+            <h1 class="fw-bold">House Price Prediction</h1>
+            <p class="text-secondary">
+                Enter property details to estimate its price in INR.
+            </p>
+        </div>
+
+        {% if error_message %}
+            <div class="alert alert-warning">
+                {{ error_message }}
+            </div>
+        {% endif %}
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h4 class="mb-4">Property Information</h4>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        {% for field in form %}
+                            <div class="col-md-6">
+                                <label
+                                    for="{{ field.id_for_label }}"
+                                    class="form-label fw-semibold">
+                                    {{ field.label }}
+                                </label>
+
+                                {{ field }}
+
+                                {% for error in field.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary btn-lg w-100 mt-4">
+                        Predict House Price
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if result %}
+            <div class="card border-success shadow-sm mb-4">
+                <div class="card-body p-4 text-center">
+                    <p class="text-secondary mb-2">
+                        Estimated House Price
+                    </p>
+
+                    <h2 class="display-5 fw-bold text-success">
+                        ₹{{ result.price|floatformat:2 }}
+                    </h2>
+
+                    <p class="mb-2">
+                        {{ result.city }} ·
+                        {{ result.area|floatformat:0 }} sq. ft.
+                    </p>
+
+                    <span class="badge text-bg-success">
+                        {{ result.model_name }}
+                    </span>
+
+                    <p class="text-secondary small mt-3 mb-0">
+                        This is a machine-learning estimate,
+                        not a guaranteed market valuation.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if metrics_report %}
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h4 class="mb-2">Model Evaluation</h4>
+
+                    <p class="text-secondary">
+                        Selected model:
+                        <strong>
+                            {{ metrics_report.selected_model }}
+                        </strong>
+                    </p>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered
+                                      table-striped align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Model</th>
+                                    <th>MAE (₹)</th>
+                                    <th>RMSE (₹)</th>
+                                    <th>R²</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for name, values in metrics_report.metrics.items %}
+                                    <tr>
+                                        <td>
+                                            {{ name }}
+                                            {% if name == metrics_report.selected_model %}
+                                                <span class="badge text-bg-success">
+                                                    Selected
+                                                </span>
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {{ values.mae_inr|floatformat:2 }}
+                                        </td>
+
+                                        <td>
+                                            {{ values.rmse_inr|floatformat:2 }}
+                                        </td>
+
+                                        <td>
+                                            {{ values.r2|floatformat:4 }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="text-secondary small mb-0">
+                        Evaluation uses a held-out test set.
+                        MAE and RMSE are measured in rupees.
+                        Higher R² is generally better.
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

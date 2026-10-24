@@ -1,0 +1,11 @@
+{
+    "selected_model": "Linear Regression",
+    "metrics": {
+        "Linear Regression": {
+            "r2": 0.9152,
+            "mae_inr": 1327363.23,
+            "mse": 3762927361249.82,
+            "rmse": 1939826.63
+        }
+    }
+}

@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard | HousePrice{% endblock %}
+
+{% block content %}
+<!-- Admin Top Banner with Report Generation -->
+<div class="dashboard-banner p-4 p-md-5 rounded-4 mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+            <h1 class="fw-bold mb-1">Admin Dashboard</h1>
+            <p class="mb-0 text-white-50">
+                Welcome, {{ user.username }}. Manage user accounts, view system predictions, and monitor machine learning models.
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'accounts:admin_predictions_report_pdf' %}" class="btn btn-light text-primary fw-semibold">
+                Download Audit Report (PDF)
+            </a>
+            <a href="{% url 'accounts:admin_predictions_report_csv' %}" class="btn btn-outline-light">
+                Export All Data (CSV)
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Overview Metric Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Total Users</span>
+                <h2 class="fw-bold mt-2 mb-0 text-primary">{{ total_users }}</h2>
+                <small class="text-muted">Registered platform accounts</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Total Predictions</span>
+                <h2 class="fw-bold mt-2 mb-0 text-success">{{ total_predictions }}</h2>
+                <small class="text-muted">Estimates generated to date</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Average Price</span>
+                <h2 class="fw-bold mt-2 mb-0">₹{{ avg_price|floatformat:0 }}</h2>
+                <small class="text-muted">Mean estimated property value</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <span class="text-secondary small text-uppercase fw-semibold">Active ML Model</span>
+                <h2 class="fw-bold mt-2 mb-0 text-info">
+                    {% if metrics_report %}
+                        {{ metrics_report.selected_model }}
+                    {% else %}
+                        Trained Model
+                    {% endif %}
+                </h2>
+                <small class="text-muted">High accuracy pipeline</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Analytical Visual Graphs Section -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Average Property Price by City</h5>
+                        <small class="text-secondary">Market valuation benchmarks across regions</small>
+                    </div>
+                </div>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="adminCityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card dashboard-card h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-0">Locality Tier Distribution</h5>
+                        <small class="text-secondary">Predictions categorized by neighborhood tier</small>
+                    </div>
+                </div>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="adminTierChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Machine Learning Model Report -->
+{% if metrics_report %}
+<div class="card dashboard-card mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">Machine Learning Performance</h4>
+                <p class="text-secondary mb-0">
+                    Active regression model evaluation on held-out test data.
+                </p>
+            </div>
+            <span class="badge text-bg-success px-3 py-2">
+                Selected: {{ metrics_report.selected_model }}
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Algorithm</th>
+                        <th>MAE (Mean Absolute Error)</th>
+                        <th>RMSE (Root Mean Squared Error)</th>
+                        <th>R² Score</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, values in metrics_report.metrics.items %}
+                        <tr>
+                            <td class="fw-semibold">{{ name }}</td>
+                            <td>₹{{ values.mae_inr|floatformat:2 }}</td>
+                            <td>₹{{ values.rmse_inr|floatformat:2 }}</td>
+                            <td>{{ values.r2|floatformat:4 }}</td>
+                            <td>
+                                {% if name == metrics_report.selected_model %}
+                                    <span class="badge text-bg-success">Active & In Use</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Alternative</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row g-3 mt-2 text-secondary small">
+            <div class="col-md-4">
+                <strong>Total Training Records:</strong> {{ metrics_report.training_rows }}
+            </div>
+            <div class="col-md-4">
+                <strong>Test Records:</strong> {{ metrics_report.test_rows }}
+            </div>
+            <div class="col-md-4">
+                <strong>Total Dataset Records:</strong> {{ metrics_report.dataset_rows }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- User Management Section -->
+<div class="card dashboard-card mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">User Management</h4>
+                <p class="text-secondary mb-0">
+                    View registered user accounts, roles, and manage permissions.
+                </p>
+            </div>
+            <span class="badge text-bg-primary px-3 py-2">
+                {{ users|length }} Total Accounts
+            </span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Predictions</th>
+                        <th>Date Joined</th>
+                        <th class="text-center">Account Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                        <tr>
+                            <td class="fw-semibold">
+                                {{ u.username }}
+                                {% if u == user %}
+                                    <span class="badge text-bg-info ms-1">You</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.email|default:"—" }}</td>
+                            <td>
+                                {% if u.is_superuser %}
+                                    <span class="badge text-bg-dark">Superuser</span>
+                                {% elif u.is_staff %}
+                                    <span class="badge text-bg-primary">Staff Admin</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">User</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active %}
+                                    <span class="badge text-bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge text-bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ u.prediction_count }}</td>
+                            <td>{{ u.date_joined|date:"d M Y" }}</td>
+                            <td class="text-center">
+                                {% if u != user %}
+                                    <div class="d-inline-flex gap-2">
+                                        <form method="post" action="{% url 'accounts:admin_toggle_user_active' u.id %}">
+                                            {% csrf_token %}
+                                            {% if u.is_active %}
+                                                <button type="submit" class="btn btn-sm btn-outline-warning">
+                                                    Deactivate
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                                    Activate
+                                                </button>
+                                            {% endif %}
+                                        </form>
+
+                                        <form method="post" action="{% url 'accounts:admin_toggle_user_staff' u.id %}">
+                                            {% csrf_token %}
+                                            {% if u.is_staff %}
+                                                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                    Revoke Staff
+                                                </button>
+                                            {% else %}
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                    Make Staff
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <span class="text-muted small">Current User</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">
+                                No registered users found.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Predictions Management Section -->
+<div class="card dashboard-card">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="fw-bold mb-1">System House Predictions</h4>
+                <p class="text-secondary mb-0">
+                    Recent predictions logged across all registered users.
+                </p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge text-bg-success px-3 py-2">
+                    {{ predictions|length }} Records
+                </span>
+                <a href="{% url 'accounts:admin_predictions_report_pdf' %}" class="btn btn-sm btn-outline-primary">
+                    Audit PDF
+                </a>
+                <a href="{% url 'accounts:admin_predictions_report_csv' %}" class="btn btn-sm btn-outline-secondary">
+                    Export CSV
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Location</th>
+                        <th>Property Details</th>
+                        <th>Estimated Price</th>
+                        <th>Date & Time</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in predictions %}
+                        <tr>
+                            <td class="fw-semibold">{{ p.id }}</td>
+                            <td>{{ p.user.username }}</td>
+                            <td>
+                                <strong>{{ p.city }}</strong>
+                                <span class="text-muted small d-block">Tier: {{ p.locality_tier }}</span>
+                            </td>
+                            <td>
+                                {{ p.bhk }} BHK · {{ p.bathrooms }} Bath
+                                <span class="text-muted small d-block">
+                                    {{ p.super_area_sqft|floatformat:0 }} sq.ft. (Floor {{ p.floor_no }}/{{ p.total_floors }})
+                                </span>
+                            </td>
+                            <td class="fw-bold text-success">
+                                ₹{{ p.predicted_price|floatformat:2 }}
+                            </td>
+                            <td>
+                                {{ p.created_at|date:"d M Y, h:i A" }}
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex gap-2">
+                                    <a href="{% url 'predictor:prediction_detail' p.pk %}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                    <a href="{% url 'predictor:prediction_report_pdf' p.pk %}"
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Download PDF Report">
+                                        PDF
+                                    </a>
+                                    <form method="post"
+                                          action="{% url 'accounts:admin_delete_prediction' p.pk %}"
+                                          onsubmit="return confirm('Are you sure you want to delete prediction #{{ p.pk }}?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">
+                                No prediction records found yet.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Admin City Chart (Bar chart)
+    const cityLabels = {{ admin_city_labels_json|safe }};
+    const cityPrices = {{ admin_city_prices_json|safe }};
+
+    const ctxCity = document.getElementById("adminCityChart");
+    if (ctxCity && cityLabels.length > 0) {
+        new Chart(ctxCity, {
+            type: "bar",
+            data: {
+                labels: cityLabels,
+                datasets: [{
+                    label: "Average Price (INR)",
+                    data: cityPrices,
+                    backgroundColor: [
+                        "#315fe8",
+                        "#198754",
+                        "#0dcaf0",
+                        "#ffc107",
+                        "#6f42c1",
+                    ],
+                    borderRadius: 6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                return "₹ " + Number(ctx.raw).toLocaleString("en-IN");
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return "₹" + (value / 100000).toFixed(0) + "L";
+                            }
+                        },
+                        grid: { color: "rgba(0,0,0,0.05)" }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // Admin Locality Tier Chart (Doughnut chart)
+    const tierLabels = {{ admin_tier_labels_json|safe }};
+    const tierCounts = {{ admin_tier_counts_json|safe }};
+
+    const ctxTier = document.getElementById("adminTierChart");
+    if (ctxTier && tierLabels.length > 0) {
+        new Chart(ctxTier, {
+            type: "doughnut",
+            data: {
+                labels: tierLabels,
+                datasets: [{
+                    data: tierCounts,
+                    backgroundColor: [
+                        "#0dcaf0",
+                        "#315fe8",
+                        "#198754",
+                    ],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: { boxWidth: 12, padding: 14 }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

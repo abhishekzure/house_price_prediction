@@ -1,0 +1,122 @@
+from django.urls import path
+from django.contrib.auth import views as auth_views
+
+from .views import (
+    register_view,
+    user_dashboard,
+    admin_dashboard,
+    admin_toggle_user_active,
+    admin_toggle_user_staff,
+    admin_delete_prediction,
+    user_predictions_report_pdf,
+    user_predictions_report_csv,
+    admin_predictions_report_pdf,
+    admin_predictions_report_csv,
+    RoleBasedLoginView,
+    profile,
+)
+
+app_name = 'accounts'
+
+urlpatterns = [
+    path(
+        'register/',
+        register_view,
+        name='register'
+    ),
+    path(
+        'login/',
+        RoleBasedLoginView.as_view(),
+        name='login'
+    ),
+    path(
+        'logout/',
+        auth_views.LogoutView.as_view(),
+        name='logout'
+    ),
+
+    path(
+        'dashboard/',
+        user_dashboard,
+        name='dashboard'
+    ),
+    path(
+        'report/pdf/',
+        user_predictions_report_pdf,
+        name='user_predictions_report_pdf'
+    ),
+    path(
+        'report/csv/',
+        user_predictions_report_csv,
+        name='user_predictions_report_csv'
+    ),
+    path(
+        'admin-dashboard/',
+        admin_dashboard,
+        name='admin_dashboard'
+    ),
+    path(
+        'admin-dashboard/report/pdf/',
+        admin_predictions_report_pdf,
+        name='admin_predictions_report_pdf'
+    ),
+    path(
+        'admin-dashboard/report/csv/',
+        admin_predictions_report_csv,
+        name='admin_predictions_report_csv'
+    ),
+    path(
+        'admin-dashboard/toggle-active/<int:user_id>/',
+        admin_toggle_user_active,
+        name='admin_toggle_user_active'
+    ),
+    path(
+        'admin-dashboard/toggle-staff/<int:user_id>/',
+        admin_toggle_user_staff,
+        name='admin_toggle_user_staff'
+    ),
+    path(
+        'admin-dashboard/delete-prediction/<int:pk>/',
+        admin_delete_prediction,
+        name='admin_delete_prediction'
+    ),
+    path(
+        'profile/',
+        profile,
+        name='profile'
+    ),
+
+    # Forgot password workflow
+    path(
+        'password-reset/',
+        auth_views.PasswordResetView.as_view(
+            template_name='accounts/password_reset_form.html',
+            email_template_name='accounts/password_reset_email.html',
+            subject_template_name='accounts/password_reset_subject.txt',
+            success_url='/accounts/password-reset/done/'
+        ),
+        name='password_reset'
+    ),
+    path(
+        'password-reset/done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='accounts/password_reset_done.html'
+        ),
+        name='password_reset_done'
+    ),
+    path(
+        'reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='accounts/password_reset_confirm.html',
+            success_url='/accounts/reset/done/'
+        ),
+        name='password_reset_confirm'
+    ),
+    path(
+        'reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='accounts/password_reset_complete.html'
+        ),
+        name='password_reset_complete'
+    ),
+]
